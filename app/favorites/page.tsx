@@ -3,9 +3,71 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { PropertyImage } from "@/components/PropertyImage";
+import { useState, useEffect } from "react";
+import { useFavorites } from "@/hooks/useFavorites";
+
+interface Property {
+  id: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  price: number;
+  squareFeet: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  yearBuilt: number | null;
+  propertyType: string | null;
+  daysOnMarket: number | null;
+  pricePerSqft: number | null;
+  listingStatus: string | null;
+  features: any;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  walkScore: number;
+  bikeScore: number;
+  transitScore: number;
+  favoritedAt: string;
+}
 
 export default function Favorites() {
   const { user, isLoaded } = useUser();
+  const {
+    isFavorited,
+    toggleFavorite,
+    loading: favoritesLoading,
+  } = useFavorites();
+  const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch user's favorite properties
+  const fetchFavorites = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/favorites");
+      if (!response.ok) {
+        throw new Error("Failed to fetch favorites");
+      }
+
+      const data = await response.json();
+      setFavoriteProperties(data.favorites);
+    } catch (err) {
+      console.error("Error fetching favorites:", err);
+      setError(err instanceof Error ? err.message : "Failed to load favorites");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && isLoaded) {
+      fetchFavorites();
+    }
+  }, [user, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -89,69 +151,63 @@ export default function Favorites() {
           </p>
         </div>
 
-        {/* Favorites Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <FavoritePropertyCard
-            id="1"
-            address="123 Main St"
-            city="San Francisco"
-            state="CA"
-            price={1250000}
-            bedrooms={3}
-            bathrooms={2}
-            squareFeet={1800}
-            yearBuilt={1955}
-            propertyType="Single Family"
-            daysOnMarket={45}
-            favoritedAt="2024-01-15"
-            walkScore={85}
-            transitScore={78}
-            bikeScore={92}
-            priceChange={50000}
-            priceChangeType="increase"
-          />
-          <FavoritePropertyCard
-            id="2"
-            address="456 Oak Ave"
-            city="San Francisco"
-            state="CA"
-            price={950000}
-            bedrooms={2}
-            bathrooms={1.5}
-            squareFeet={1500}
-            yearBuilt={1980}
-            propertyType="Condo"
-            daysOnMarket={23}
-            favoritedAt="2024-01-10"
-            walkScore={88}
-            transitScore={82}
-            bikeScore={90}
-            priceChange={-25000}
-            priceChangeType="decrease"
-          />
-          <FavoritePropertyCard
-            id="3"
-            address="789 Pine St"
-            city="San Francisco"
-            state="CA"
-            price={1800000}
-            bedrooms={4}
-            bathrooms={3}
-            squareFeet={2000}
-            yearBuilt={2010}
-            propertyType="Single Family"
-            daysOnMarket={12}
-            favoritedAt="2024-01-08"
-            walkScore={92}
-            transitScore={95}
-            bikeScore={75}
-            priceChange={0}
-            priceChangeType="stable"
-          />
-        </div>
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="mt-2 text-gray-600">Loading your favorites...</p>
+          </div>
+        )}
 
-        {/* Empty State (when no favorites) */}
-        {false && (
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">😞</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Error Loading Favorites
+            </h3>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={fetchFavorites}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Favorites Grid */}
+        {!loading && !error && favoriteProperties.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {favoriteProperties.map((property) => (
+              <FavoritePropertyCard
+                key={property.id}
+                id={property.id}
+                address={property.address}
+                city={property.city}
+                state={property.state}
+                price={property.price}
+                bedrooms={property.bedrooms}
+                bathrooms={property.bathrooms}
+                squareFeet={property.squareFeet}
+                yearBuilt={property.yearBuilt}
+                propertyType={property.propertyType}
+                daysOnMarket={property.daysOnMarket}
+                pricePerSqft={property.pricePerSqft}
+                walkScore={property.walkScore}
+                bikeScore={property.bikeScore}
+                transitScore={property.transitScore}
+                favoritedAt={property.favoritedAt}
+                isFavorited={isFavorited(property.id)}
+                onToggleFavorite={() => toggleFavorite(property.id)}
+                favoritesLoading={favoritesLoading}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && favoriteProperties.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">❤️</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -170,33 +226,34 @@ export default function Favorites() {
           </div>
         )}
 
-        {/* Comparison Actions */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Compare Properties
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Select properties to compare side-by-side and make informed
-            decisions.
-          </p>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded border-gray-300" />
-              <span className="text-sm text-gray-700">123 Main St</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded border-gray-300" />
-              <span className="text-sm text-gray-700">456 Oak Ave</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded border-gray-300" />
-              <span className="text-sm text-gray-700">789 Pine St</span>
-            </label>
+        {/* Comparison Actions - Only show if there are favorites */}
+        {!loading && !error && favoriteProperties.length > 0 && (
+          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Compare Properties
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Select properties to compare side-by-side and make informed
+              decisions.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {favoriteProperties.map((property) => (
+                <label
+                  key={property.id}
+                  className="flex items-center space-x-2"
+                >
+                  <input type="checkbox" className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-700">
+                    {property.address}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+              Compare Selected Properties
+            </button>
           </div>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-            Compare Selected Properties
-          </button>
-        </div>
+        )}
       </main>
     </div>
   );
@@ -214,30 +271,34 @@ function FavoritePropertyCard({
   yearBuilt,
   propertyType,
   daysOnMarket,
-  favoritedAt,
+  pricePerSqft,
   walkScore,
-  transitScore,
   bikeScore,
-  priceChange,
-  priceChangeType,
+  transitScore,
+  favoritedAt,
+  isFavorited,
+  onToggleFavorite,
+  favoritesLoading,
 }: {
   id: string;
   address: string;
   city: string;
   state: string;
   price: number;
-  bedrooms: number;
-  bathrooms: number;
-  squareFeet: number;
-  yearBuilt: number;
-  propertyType: string;
-  daysOnMarket: number;
-  favoritedAt: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  squareFeet: number | null;
+  yearBuilt: number | null;
+  propertyType: string | null;
+  daysOnMarket: number | null;
+  pricePerSqft: number | null;
   walkScore: number;
-  transitScore: number;
   bikeScore: number;
-  priceChange: number;
-  priceChangeType: "increase" | "decrease" | "stable";
+  transitScore: number;
+  favoritedAt: string;
+  isFavorited: boolean;
+  onToggleFavorite: () => void;
+  favoritesLoading: boolean;
 }) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -248,21 +309,9 @@ function FavoritePropertyCard({
     }).format(price);
   };
 
-  const formatPriceChange = (change: number) => {
-    if (change === 0) return "No change";
-    const sign = change > 0 ? "+" : "";
-    return `${sign}${formatPrice(change)}`;
-  };
-
-  const getPriceChangeColor = (type: string) => {
-    switch (type) {
-      case "increase":
-        return "text-red-600";
-      case "decrease":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
-    }
+  const formatPropertyType = (type: string | null) => {
+    if (!type) return "N/A";
+    return type.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   return (
@@ -278,13 +327,25 @@ function FavoritePropertyCard({
           height={192}
         />
         <div className="absolute top-3 right-3">
-          <button className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors">
-            <span className="text-red-500">❤️</span>
+          <button
+            onClick={onToggleFavorite}
+            disabled={favoritesLoading}
+            className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              className={`text-lg ${
+                isFavorited
+                  ? "text-red-500"
+                  : "text-gray-400 hover:text-red-500"
+              }`}
+            >
+              {isFavorited ? "❤️" : "🤍"}
+            </span>
           </button>
         </div>
         <div className="absolute bottom-3 left-3">
           <span className="bg-indigo-600 text-white px-2 py-1 rounded text-sm font-medium">
-            {propertyType}
+            {formatPropertyType(propertyType)}
           </span>
         </div>
         <div className="absolute bottom-3 right-3">
@@ -308,20 +369,15 @@ function FavoritePropertyCard({
             {formatPrice(price)}
           </p>
           <p className="text-sm text-gray-500">
-            {formatPrice(price / squareFeet)}/sq ft
+            {pricePerSqft ? formatPrice(pricePerSqft) : "N/A"}/sq ft
           </p>
-          {priceChange !== 0 && (
-            <p className={`text-sm ${getPriceChangeColor(priceChangeType)}`}>
-              {formatPriceChange(priceChange)} from last month
-            </p>
-          )}
         </div>
 
         <div className="flex items-center space-x-4 mb-3 text-sm text-gray-900">
-          <span>{bedrooms} bed</span>
-          <span>{bathrooms} bath</span>
-          <span>{squareFeet.toLocaleString()} sq ft</span>
-          <span>{yearBuilt}</span>
+          <span>{bedrooms || "N/A"} bed</span>
+          <span>{bathrooms || "N/A"} bath</span>
+          <span>{squareFeet ? squareFeet.toLocaleString() : "N/A"} sq ft</span>
+          <span>{yearBuilt || "N/A"}</span>
         </div>
 
         {/* Location Scores */}
@@ -342,13 +398,20 @@ function FavoritePropertyCard({
 
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-500">
-            {daysOnMarket} days on market
+            {daysOnMarket || 0} days on market
           </span>
           <div className="flex space-x-2">
-            <button className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+            <Link
+              href={`/properties/${id}`}
+              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+            >
               View Details
-            </button>
-            <button className="text-red-600 hover:text-red-700 text-sm font-medium">
+            </Link>
+            <button
+              onClick={onToggleFavorite}
+              disabled={favoritesLoading}
+              className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Remove
             </button>
           </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { PropertyImage } from "@/components/PropertyImage";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface Property {
   id: string;
@@ -32,6 +33,11 @@ interface Property {
 
 export default function PropertyDetails() {
   const { user, isLoaded } = useUser();
+  const {
+    isFavorited,
+    toggleFavorite,
+    loading: favoritesLoading,
+  } = useFavorites();
   const params = useParams();
   const propertyId = params.id as string;
 
@@ -459,8 +465,18 @@ export default function PropertyDetails() {
                 Actions
               </h2>
               <div className="space-y-3">
-                <button className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-                  Save to Favorites
+                <button
+                  onClick={() => toggleFavorite(property.id)}
+                  disabled={favoritesLoading}
+                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isFavorited(property.id)
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-indigo-600 text-white hover:bg-indigo-700"
+                  }`}
+                >
+                  {isFavorited(property.id)
+                    ? "❤️ Remove from Favorites"
+                    : "🤍 Save to Favorites"}
                 </button>
                 <button className="w-full bg-white border border-gray-300 text-gray-900 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
                   Compare Properties

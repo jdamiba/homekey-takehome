@@ -17,16 +17,12 @@ export async function GET(
         p.days_on_market as "daysOnMarket", p.price_per_sqft as "pricePerSqft", 
         p.listing_status as "listingStatus", p.features, p.description, 
         p.created_at as "createdAt", p.updated_at as "updatedAt",
-        COALESCE(AVG(n.walk_score), 0) as "walkScore",
-        COALESCE(AVG(n.bike_score), 0) as "bikeScore", 
-        COALESCE(AVG(n.transit_score), 0) as "transitScore"
+        COALESCE(n.walk_score, 0) as "walkScore",
+        COALESCE(n.bike_score, 0) as "bikeScore", 
+        COALESCE(n.transit_score, 0) as "transitScore"
       FROM properties p
-      LEFT JOIN neighborhoods n ON p.city = n.city AND p.state = n.state
+      LEFT JOIN neighborhoods n ON p.neighborhood_id = n.id
       WHERE p.id = $1::uuid
-      GROUP BY p.id, p.address, p.city, p.state, p.zip_code, p.price, 
-               p.square_feet, p.bedrooms, p.bathrooms, p.year_built, p.property_type, 
-               p.days_on_market, p.price_per_sqft, p.listing_status, p.features, p.description, 
-               p.created_at, p.updated_at
     `;
 
     const properties = await prisma.$queryRawUnsafe(propertyQuery, id);

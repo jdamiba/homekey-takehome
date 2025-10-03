@@ -2,9 +2,42 @@
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+interface SearchHistory {
+  id: string;
+  search_criteria: any;
+  created_at: string;
+  results_count: number;
+}
+
+interface FavoriteSummary {
+  id: string;
+  address: string;
+  city: string;
+  state: string;
+  price: number;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  favorited_at: string;
+}
+
+interface MarketInsights {
+  priceIncrease: number;
+  avgDaysOnMarket: number;
+  soldAtAskingPercentage: number;
+  totalActiveProperties: number;
+  avgPrice: number;
+  topCities: any[];
+}
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser();
+  const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
+  const [favoritesSummary, setFavoritesSummary] = useState<FavoriteSummary[]>([]);
+  const [totalFavorites, setTotalFavorites] = useState(0);
+  const [marketInsights, setMarketInsights] = useState<MarketInsights | null>(null);
+  const [loading, setLoading] = useState(true);
 
   if (!isLoaded) {
     return (

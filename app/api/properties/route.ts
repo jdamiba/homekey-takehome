@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
     const propertyType = searchParams.get("propertyType");
     const bedrooms = searchParams.get("bedrooms");
     const bathrooms = searchParams.get("bathrooms");
+    const sortBy = searchParams.get("sortBy") || "created_at";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
@@ -59,38 +61,61 @@ export async function GET(req: NextRequest) {
         ? `WHERE ${whereConditions.join(" AND ")}`
         : "";
 
+    // Build ORDER BY clause for sorting
+    let orderByClause = "ORDER BY p.created_at DESC"; // default
+    if (sortBy && sortOrder) {
+      const validSortFields = {
+        price: "p.price",
+        walkScore: "n.walk_score",
+        bikeScore: "n.bike_score",
+        transitScore: "n.transit_score",
+        created_at: "p.created_at",
+        bedrooms: "p.bedrooms",
+        bathrooms: "p.bathrooms",
+        squareFeet: "p.square_feet",
+        yearBuilt: "p.year_built",
+      };
+
+      const validSortOrders = ["asc", "desc"];
+
+      if (
+        validSortFields[sortBy as keyof typeof validSortFields] &&
+        validSortOrders.includes(sortOrder.toLowerCase())
+      ) {
+        const field = validSortFields[sortBy as keyof typeof validSortFields];
+        const order = sortOrder.toLowerCase();
+        orderByClause = `ORDER BY ${field} ${order.toUpperCase()}`;
+      }
+    }
+
     // Get properties with pagination and filtering using raw SQL
     const limitParam = queryParams.length + 1;
     const offsetParam = queryParams.length + 2;
 
     const propertiesQuery = `
-      SELECT 
-        p.id, p.address, p.city, p.state, p.zip_code as "zipCode", p.price, 
-        p.square_feet as "squareFeet", p.bedrooms, p.bathrooms,
-        p.year_built as "yearBuilt", p.property_type as "propertyType", 
-        p.days_on_market as "daysOnMarket", p.price_per_sqft as "pricePerSqft", 
-        p.listing_status as "listingStatus", p.features, p.description, 
-        p.created_at as "createdAt", p.updated_at as "updatedAt",
-        COALESCE(AVG(n.walk_score), 0) as "walkScore",
-        COALESCE(AVG(n.bike_score), 0) as "bikeScore", 
-        COALESCE(AVG(n.transit_score), 0) as "transitScore"
-      FROM properties p
-      LEFT JOIN neighborhoods n ON p.city = n.city AND p.state = n.state
-      ${whereClause}
-      GROUP BY p.id, p.address, p.city, p.state, p.zip_code, p.price, 
-               p.square_feet, p.bedrooms, p.bathrooms, p.year_built, p.property_type, 
-               p.days_on_market, p.price_per_sqft, p.listing_status, p.features, p.description, 
-               p.created_at, p.updated_at
-      ORDER BY p.created_at DESC
-      LIMIT $${limitParam} OFFSET $${offsetParam}
-    `;
+          SELECT 
+            p.id, p.address, p.city, p.state, p.zip_code as "zipCode", p.price, 
+            p.square_feet as "squareFeet", p.bedrooms, p.bathrooms,
+            p.year_built as "yearBuilt", p.property_type as "propertyType", 
+            p.days_on_market as "daysOnMarket", p.price_per_sqft as "pricePerSqft", 
+            p.listing_status as "listingStatus", p.features, p.description, 
+            p.created_at as "createdAt", p.updated_at as "updatedAt",
+            COALESCE(n.walk_score, 0) as "walkScore",
+            COALESCE(n.bike_score, 0) as "bikeScore", 
+            COALESCE(n.transit_score, 0) as "transitScore"
+          FROM properties p
+          LEFT JOIN neighborhoods n ON p.neighborhood_id = n.id
+          ${whereClause}
+          ${orderByClause}
+          LIMIT $${limitParam} OFFSET $${offsetParam}
+        `;
 
     const countQuery = `
-      SELECT COUNT(DISTINCT p.id) as count 
-      FROM properties p
-      LEFT JOIN neighborhoods n ON p.city = n.city AND p.state = n.state
-      ${whereClause}
-    `;
+          SELECT COUNT(p.id) as count 
+          FROM properties p
+          LEFT JOIN neighborhoods n ON p.neighborhood_id = n.id
+          ${whereClause}
+        `;
 
     const allParams = [...queryParams, limit, offset];
 

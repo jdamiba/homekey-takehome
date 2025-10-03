@@ -4,6 +4,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { PropertyImage } from "@/components/PropertyImage";
 import { useState, useEffect } from "react";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface Property {
   id: string;
@@ -40,6 +41,11 @@ interface PaginationInfo {
 
 export default function Properties() {
   const { user, isLoaded } = useUser();
+  const {
+    isFavorited,
+    toggleFavorite,
+    loading: favoritesLoading,
+  } = useFavorites();
   const [properties, setProperties] = useState<Property[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,6 +58,10 @@ export default function Properties() {
     bedrooms: "",
     bathrooms: "",
   });
+  const [sorting, setSorting] = useState({
+    sortBy: "created_at",
+    sortOrder: "desc",
+  });
 
   // Fetch properties from API
   const fetchProperties = async (page: number = 1, reset: boolean = false) => {
@@ -63,6 +73,7 @@ export default function Properties() {
         page: page.toString(),
         limit: "10",
         ...filters,
+        ...sorting,
       });
 
       const response = await fetch(`/api/properties?${params}`);
@@ -88,7 +99,7 @@ export default function Properties() {
   // Load initial properties
   useEffect(() => {
     fetchProperties(1, true);
-  }, []);
+  }, [sorting]);
 
   // Handle search
   const handleSearch = () => {
@@ -105,6 +116,11 @@ export default function Properties() {
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Handle sorting changes
+  const handleSortChange = (sortBy: string, sortOrder: string) => {
+    setSorting({ sortBy, sortOrder });
   };
 
   // Get current price range selection
@@ -275,6 +291,49 @@ export default function Properties() {
           </div>
         </div>
 
+        {/* Sorting Controls */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <label className="text-sm font-medium text-gray-700">
+                Sort by:
+              </label>
+              <select
+                value={sorting.sortBy}
+                onChange={(e) =>
+                  handleSortChange(e.target.value, sorting.sortOrder)
+                }
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              >
+                <option value="created_at">Date Added</option>
+                <option value="price">Price</option>
+                <option value="walkScore">Walkability</option>
+                <option value="bikeScore">Bikability</option>
+                <option value="transitScore">Transit</option>
+                <option value="bedrooms">Bedrooms</option>
+                <option value="bathrooms">Bathrooms</option>
+                <option value="squareFeet">Square Feet</option>
+                <option value="yearBuilt">Year Built</option>
+              </select>
+              <select
+                value={sorting.sortOrder}
+                onChange={(e) =>
+                  handleSortChange(sorting.sortBy, e.target.value)
+                }
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              >
+                <option value="desc">High to Low</option>
+                <option value="asc">Low to High</option>
+              </select>
+            </div>
+            <div className="text-sm text-gray-500">
+              {pagination?.totalCount && (
+                <span>{pagination.totalCount} properties found</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Loading State */}
         {loading && (
           <div className="text-center py-12">
@@ -307,6 +366,9 @@ export default function Properties() {
                       walkScore={property.walkScore}
                       bikeScore={property.bikeScore}
                       transitScore={property.transitScore}
+                      isFavorited={isFavorited(property.id)}
+                      onToggleFavorite={() => toggleFavorite(property.id)}
+                      favoritesLoading={favoritesLoading}
                     />
                   ))}
                 </div>
@@ -385,6 +447,9 @@ function PropertyCard({
   walkScore,
   bikeScore,
   transitScore,
+  isFavorited,
+  onToggleFavorite,
+  favoritesLoading,
 }: {
   id: string;
   address: string;
@@ -401,6 +466,9 @@ function PropertyCard({
   walkScore: number;
   bikeScore: number;
   transitScore: number;
+  isFavorited: boolean;
+  onToggleFavorite: () => void;
+  favoritesLoading: boolean;
 }) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -424,14 +492,21 @@ function PropertyCard({
           height={192}
         />
         <div className="absolute top-3 right-3">
-          <button className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors">
-            <span className="text-red-500">♡</span>
+          <button
+            onClick={onToggleFavorite}
+            disabled={favoritesLoading}
+            className="bg-white/80 hover:bg-white p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              className={`text-lg ${
+                isFavorited
+                  ? "text-red-500"
+                  : "text-gray-400 hover:text-red-500"
+              }`}
+            >
+              {isFavorited ? "❤️" : "🤍"}
+            </span>
           </button>
-        </div>
-        <div className="absolute bottom-3 left-3">
-          <span className="bg-indigo-600 text-white px-2 py-1 rounded text-sm font-medium">
-            {propertyType}
-          </span>
         </div>
       </div>
 
