@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { PropertyImage } from "@/components/PropertyImage";
 import { useFavorites } from "@/hooks/useFavorites";
+import { MobileNav } from "@/components/MobileNav";
 
 interface Property {
   id: string;
@@ -91,7 +92,7 @@ export default function PropertyDetails() {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b">
+        <nav className="bg-white shadow-sm border-b relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-8">
@@ -134,6 +135,7 @@ export default function PropertyDetails() {
                     </div>
                   </div>
                 )}
+                <MobileNav currentPath="/properties" />
               </div>
             </div>
           </div>
@@ -154,7 +156,7 @@ export default function PropertyDetails() {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b">
+        <nav className="bg-white shadow-sm border-b relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-8">
@@ -169,6 +171,9 @@ export default function PropertyDetails() {
                     Properties
                   </Link>
                 </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <MobileNav currentPath="/properties" />
               </div>
             </div>
           </div>
@@ -199,7 +204,7 @@ export default function PropertyDetails() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
@@ -242,6 +247,7 @@ export default function PropertyDetails() {
                   </div>
                 </div>
               )}
+              <MobileNav currentPath="/properties" />
             </div>
           </div>
         </div>
@@ -477,15 +483,6 @@ export default function PropertyDetails() {
                   {isFavorited(property.id)
                     ? "❤️ Remove from Favorites"
                     : "🤍 Save to Favorites"}
-                </button>
-                <button className="w-full bg-white border border-gray-300 text-gray-900 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                  Compare Properties
-                </button>
-                <button className="w-full bg-white border border-gray-300 text-gray-900 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                  Share Property
-                </button>
-                <button className="w-full bg-white border border-gray-300 text-gray-900 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-                  Contact Agent
                 </button>
               </div>
             </div>

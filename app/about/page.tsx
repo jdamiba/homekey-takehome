@@ -2,6 +2,7 @@
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { MobileNav } from "@/components/MobileNav";
 
 export default function About() {
   const { user, isLoaded } = useUser();
@@ -9,7 +10,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
@@ -35,16 +36,11 @@ export default function About() {
                 >
                   Favorites
                 </Link>
-                <Link
-                  href="/comparisons"
-                  className="text-gray-700 hover:text-indigo-600 font-medium"
-                >
-                  Comparisons
-                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               {isLoaded && user && <UserButton afterSignOutUrl="/" />}
+              <MobileNav currentPath="/about" />
             </div>
           </div>
         </div>
@@ -159,11 +155,11 @@ export default function About() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">
-                    Compare & Decide
+                    Save & Organize
                   </h3>
                   <p className="text-gray-600">
-                    Compare multiple properties side-by-side and make informed
-                    decisions with confidence.
+                    Save your favorite properties and organize them for easy
+                    reference and future decisions.
                   </p>
                 </div>
               </div>

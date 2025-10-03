@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PropertyImage } from "@/components/PropertyImage";
 import { useState, useEffect } from "react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { MobileNav } from "@/components/MobileNav";
 
 interface Property {
   id: string;
@@ -101,7 +102,7 @@ export default function Favorites() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
@@ -124,16 +125,11 @@ export default function Favorites() {
                 <Link href="/favorites" className="text-indigo-600 font-medium">
                   Favorites
                 </Link>
-                <Link
-                  href="/comparisons"
-                  className="text-gray-700 hover:text-indigo-600 font-medium"
-                >
-                  Comparisons
-                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <UserButton afterSignOutUrl="/" />
+              <MobileNav currentPath="/favorites" />
             </div>
           </div>
         </div>
@@ -147,7 +143,7 @@ export default function Favorites() {
             Your Favorite Properties
           </h1>
           <p className="text-gray-600">
-            Properties you&apos;ve saved for future reference and comparison.
+            Properties you&apos;ve saved for future reference.
           </p>
         </div>
 
@@ -223,35 +219,6 @@ export default function Favorites() {
             >
               Browse Properties
             </Link>
-          </div>
-        )}
-
-        {/* Comparison Actions - Only show if there are favorites */}
-        {!loading && !error && favoriteProperties.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Compare Properties
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Select properties to compare side-by-side and make informed
-              decisions.
-            </p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {favoriteProperties.map((property) => (
-                <label
-                  key={property.id}
-                  className="flex items-center space-x-2"
-                >
-                  <input type="checkbox" className="rounded border-gray-300" />
-                  <span className="text-sm text-gray-700">
-                    {property.address}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">
-              Compare Selected Properties
-            </button>
           </div>
         )}
       </main>

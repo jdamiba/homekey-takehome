@@ -1,12 +1,12 @@
-// Removed unused imports
 import Link from "next/link";
 import { AuthButtons } from "@/components/AuthButtons";
+import { MobileNav } from "@/components/MobileNav";
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -16,6 +16,7 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <AuthButtons />
+              <MobileNav currentPath="/" />
             </div>
           </div>
         </div>

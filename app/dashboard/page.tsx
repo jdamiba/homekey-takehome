@@ -3,6 +3,7 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { MobileNav } from "@/components/MobileNav";
 
 interface SearchHistory {
   id: string;
@@ -145,7 +146,7 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Navigation */}
-        <nav className="bg-white shadow-sm border-b">
+        <nav className="bg-white shadow-sm border-b relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-8">
@@ -171,16 +172,11 @@ export default function Dashboard() {
                   >
                     Favorites
                   </Link>
-                  <Link
-                    href="/comparisons"
-                    className="text-gray-700 hover:text-indigo-600 font-medium"
-                  >
-                    Comparisons
-                  </Link>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
                 <UserButton afterSignOutUrl="/" />
+                <MobileNav currentPath="/dashboard" />
               </div>
             </div>
           </div>
@@ -200,7 +196,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
@@ -223,16 +219,11 @@ export default function Dashboard() {
                 >
                   Favorites
                 </Link>
-                <Link
-                  href="/comparisons"
-                  className="text-gray-700 hover:text-indigo-600 font-medium"
-                >
-                  Comparisons
-                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <UserButton afterSignOutUrl="/" />
+              <MobileNav currentPath="/dashboard" />
             </div>
           </div>
         </div>
@@ -267,13 +258,6 @@ export default function Dashboard() {
             icon="❤️"
             href="/favorites"
             color="bg-red-500"
-          />
-          <QuickActionCard
-            title="Compare Properties"
-            description="Side-by-side property analysis"
-            icon="⚖️"
-            href="/comparisons"
-            color="bg-green-500"
           />
           <QuickActionCard
             title="Market Trends"

@@ -6,6 +6,7 @@ import { PropertyImage } from "@/components/PropertyImage";
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useFavorites } from "@/hooks/useFavorites";
+import { MobileNav } from "@/components/MobileNav";
 
 interface Property {
   id: string;
@@ -176,7 +177,7 @@ function PropertiesContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      <nav className="bg-white shadow-sm border-b relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
@@ -202,16 +203,11 @@ function PropertiesContent() {
                 >
                   Favorites
                 </Link>
-                <Link
-                  href="/comparisons"
-                  className="text-gray-700 hover:text-indigo-600 font-medium"
-                >
-                  Comparisons
-                </Link>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               {isLoaded && user && <UserButton afterSignOutUrl="/" />}
+              <MobileNav currentPath="/properties" />
             </div>
           </div>
         </div>
@@ -602,9 +598,6 @@ function PropertyCard({
             >
               View Details
             </Link>
-            <button className="text-gray-900 hover:text-gray-700 text-sm font-medium">
-              Compare
-            </button>
           </div>
         </div>
       </div>
