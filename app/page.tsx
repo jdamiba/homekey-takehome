@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+// Removed unused imports
 import Link from "next/link";
 import { AuthButtons } from "@/components/AuthButtons";
 

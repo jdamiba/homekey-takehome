@@ -25,16 +25,41 @@ export async function GET(
       WHERE p.id = $1::uuid
     `;
 
-    const properties = await prisma.$queryRawUnsafe(propertyQuery, id);
+    const properties = (await prisma.$queryRawUnsafe(
+      propertyQuery,
+      id
+    )) as Array<{
+      id: string;
+      address: string;
+      city: string;
+      state: string;
+      zip_code: string;
+      price: string;
+      square_feet: number | null;
+      bedrooms: number | null;
+      bathrooms: number | null;
+      year_built: number | null;
+      property_type: string | null;
+      days_on_market: number | null;
+      price_per_sqft: string | null;
+      listing_status: string | null;
+      features: unknown;
+      description: string | null;
+      created_at: string;
+      updated_at: string;
+      walk_score: number;
+      bike_score: number;
+      transit_score: number;
+    }>;
 
-    if (!properties || (properties as any[]).length === 0) {
+    if (!properties || properties.length === 0) {
       return NextResponse.json(
         { error: "Property not found" },
         { status: 404 }
       );
     }
 
-    const property = (properties as any[])[0];
+    const property = properties[0];
 
     return NextResponse.json({
       property,

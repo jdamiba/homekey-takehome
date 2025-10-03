@@ -21,7 +21,7 @@ interface Property {
   daysOnMarket: number | null;
   pricePerSqft: number | null;
   listingStatus: string | null;
-  features: any;
+  features: Record<string, unknown> | null;
   description: string | null;
   createdAt: string;
   updatedAt: string;
@@ -147,7 +147,7 @@ export default function Favorites() {
             Your Favorite Properties
           </h1>
           <p className="text-gray-600">
-            Properties you've saved for future reference and comparison.
+            Properties you&apos;ve saved for future reference and comparison.
           </p>
         </div>
 

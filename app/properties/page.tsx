@@ -3,7 +3,8 @@
 import { UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { PropertyImage } from "@/components/PropertyImage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useFavorites } from "@/hooks/useFavorites";
 
 interface Property {
@@ -21,7 +22,7 @@ interface Property {
   daysOnMarket: number | null;
   pricePerSqft: number | null;
   listingStatus: string | null;
-  features: any;
+  features: Record<string, unknown> | null;
   description: string | null;
   createdAt: string;
   updatedAt: string;
@@ -39,8 +40,9 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-export default function Properties() {
+function PropertiesContent() {
   const { user, isLoaded } = useUser();
+  const searchParams = useSearchParams();
   const {
     isFavorited,
     toggleFavorite,
@@ -50,59 +52,95 @@ export default function Properties() {
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  // Initialize filters from URL parameters
   const [filters, setFilters] = useState({
-    city: "",
-    minPrice: "",
-    maxPrice: "",
-    propertyType: "",
-    bedrooms: "",
-    bathrooms: "",
+    city: searchParams.get("city") || "",
+    minPrice: searchParams.get("minPrice") || "",
+    maxPrice: searchParams.get("maxPrice") || "",
+    propertyType: searchParams.get("propertyType") || "",
+    bedrooms: searchParams.get("bedrooms") || "",
+    bathrooms: searchParams.get("bathrooms") || "",
   });
+
   const [sorting, setSorting] = useState({
     sortBy: "created_at",
     sortOrder: "desc",
   });
 
   // Fetch properties from API
-  const fetchProperties = async (page: number = 1, reset: boolean = false) => {
-    try {
-      if (page === 1) setLoading(true);
-      else setLoadingMore(true);
+  const fetchProperties = useCallback(
+    async (page: number = 1, reset: boolean = false) => {
+      try {
+        if (page === 1) setLoading(true);
+        else setLoadingMore(true);
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "10",
-        ...filters,
-        ...sorting,
-      });
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: "10",
+          ...filters,
+          ...sorting,
+        });
 
-      const response = await fetch(`/api/properties?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch properties");
+        const response = await fetch(`/api/properties?${params}`);
+        if (!response.ok) throw new Error("Failed to fetch properties");
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (reset || page === 1) {
-        setProperties(data.properties);
-      } else {
-        setProperties((prev) => [...prev, ...data.properties]);
+        if (reset || page === 1) {
+          setProperties(data.properties);
+        } else {
+          setProperties((prev) => [...prev, ...data.properties]);
+        }
+
+        setPagination(data.pagination);
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-
-      setPagination(data.pagination);
-    } catch (error) {
-      console.error("Error fetching properties:", error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+    },
+    [filters, sorting]
+  );
 
   // Load initial properties
   useEffect(() => {
     fetchProperties(1, true);
-  }, [sorting]);
+  }, [fetchProperties]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+
+    const newUrl = params.toString() ? `?${params.toString()}` : "/properties";
+    window.history.replaceState({}, "", newUrl);
+  }, [filters]);
 
   // Handle search
-  const handleSearch = () => {
+  const handleSearch = async () => {
+    // Save the search if user is authenticated
+    if (user) {
+      try {
+        await fetch(`/api/users/${user.id}/searches`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            searchCriteria: filters,
+            searchName: null, // Could be made editable in the future
+          }),
+        });
+      } catch (error) {
+        console.error("Error saving search:", error);
+        // Don't block the search if saving fails
+      }
+    }
+
     fetchProperties(1, true);
   };
 
@@ -571,5 +609,22 @@ function PropertyCard({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Properties() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <p className="mt-4 text-gray-600 text-lg">Loading properties...</p>
+          </div>
+        </div>
+      }
+    >
+      <PropertiesContent />
+    </Suspense>
   );
 }

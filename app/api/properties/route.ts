@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause for filtering
-    let whereConditions = [];
-    let queryParams: any[] = [];
+    const whereConditions: string[] = [];
+    const queryParams: string[] = [];
 
     if (city) {
       whereConditions.push(
@@ -31,12 +31,12 @@ export async function GET(req: NextRequest) {
 
     if (minPrice) {
       whereConditions.push(`p.price >= $${queryParams.length + 1}`);
-      queryParams.push(parseInt(minPrice));
+      queryParams.push(minPrice);
     }
 
     if (maxPrice) {
       whereConditions.push(`p.price <= $${queryParams.length + 1}`);
-      queryParams.push(parseInt(maxPrice));
+      queryParams.push(maxPrice);
     }
 
     if (propertyType) {
@@ -48,12 +48,12 @@ export async function GET(req: NextRequest) {
 
     if (bedrooms) {
       whereConditions.push(`p.bedrooms >= $${queryParams.length + 1}`);
-      queryParams.push(parseInt(bedrooms));
+      queryParams.push(bedrooms);
     }
 
     if (bathrooms) {
       whereConditions.push(`p.bathrooms >= $${queryParams.length + 1}`);
-      queryParams.push(parseFloat(bathrooms));
+      queryParams.push(bathrooms);
     }
 
     const whereClause =
@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
       prisma.$queryRawUnsafe(countQuery, ...queryParams),
     ]);
 
-    const totalCount = parseInt((countResult as any)[0].count);
+    const totalCount = parseInt((countResult as { count: string }[])[0].count);
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;

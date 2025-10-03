@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export interface CreateUserData {
   id: string;
@@ -15,7 +16,7 @@ export interface UpdateUserData {
   lastName?: string;
   phone?: string;
   profileImageUrl?: string;
-  preferences?: Record<string, any>;
+  preferences?: Record<string, unknown>;
 }
 
 export class UserService {
@@ -46,7 +47,7 @@ export class UserService {
         lastName: data.lastName,
         phone: data.phone,
         profileImageUrl: data.profileImageUrl,
-        preferences: data.preferences,
+        preferences: data.preferences as Prisma.InputJsonValue,
       },
     });
   }
@@ -84,11 +85,11 @@ export class UserService {
 
   static async updateUserPreferences(
     userId: string,
-    preferences: Record<string, any>
+    preferences: Record<string, unknown>
   ) {
     return await prisma.user.update({
       where: { id: userId },
-      data: { preferences },
+      data: { preferences: preferences as Prisma.InputJsonValue },
     });
   }
 }

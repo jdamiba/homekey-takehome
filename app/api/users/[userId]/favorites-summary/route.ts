@@ -10,24 +10,19 @@ export async function GET(
   try {
     const { userId: authUserId } = await auth();
     const { userId } = await params;
-    
+
     if (!authUserId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Ensure user can only access their own data
     if (authUserId !== userId) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Get user's recent favorites
-    const recentFavorites = await prisma.$queryRaw`
+    const recentFavorites = (await prisma.$queryRawUnsafe(
+      `
       SELECT 
         p.id,
         p.address,
@@ -42,21 +37,34 @@ export async function GET(
       WHERE uf.user_id = $1
       ORDER BY uf.created_at DESC
       LIMIT 3
-    ` as any[];
+    `,
+      userId
+    )) as Array<{
+      id: string;
+      address: string;
+      city: string;
+      state: string;
+      price: string;
+      bedrooms: number | null;
+      bathrooms: number | null;
+      favorited_at: string;
+    }>;
 
     // Get total favorites count
-    const totalFavorites = await prisma.$queryRaw`
+    const totalFavorites = (await prisma.$queryRawUnsafe(
+      `
       SELECT COUNT(*) as count
       FROM user_favorites 
       WHERE user_id = $1
-    ` as any[];
+    `,
+      userId
+    )) as Array<{ count: string }>;
 
     return NextResponse.json({
       recentFavorites,
-      totalCount: parseInt(totalFavorites[0]?.count || "0"),
-      message: "Favorites summary retrieved successfully"
+      totalCount: parseInt(String(totalFavorites[0]?.count || "0")),
+      message: "Favorites summary retrieved successfully",
     });
-
   } catch (error) {
     console.error("Error fetching favorites summary:", error);
     return NextResponse.json(

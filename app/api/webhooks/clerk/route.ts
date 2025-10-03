@@ -17,12 +17,11 @@ export async function POST(req: NextRequest) {
 
   // Get the body
   const payload = await req.text();
-  const body = JSON.parse(payload);
 
   // Create a new Svix instance with your secret.
   const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET || "");
 
-  let evt: any;
+  let evt: unknown;
 
   // Verify the payload with the headers
   try {
@@ -39,18 +38,30 @@ export async function POST(req: NextRequest) {
   }
 
   // Handle the webhook
-  const eventType = evt.type;
+  const event = evt as {
+    type: string;
+    data: {
+      id: string;
+      email_addresses: Array<{ email_address: string }>;
+      first_name?: string;
+      last_name?: string;
+      phone_numbers: Array<{ phone_number: string }>;
+      image_url?: string;
+    };
+  };
+
+  const eventType = event.type;
 
   try {
     switch (eventType) {
       case "user.created":
-        await handleUserCreated(evt.data);
+        await handleUserCreated(event.data);
         break;
       case "user.updated":
-        await handleUserUpdated(evt.data);
+        await handleUserUpdated(event.data);
         break;
       case "user.deleted":
-        await handleUserDeleted(evt.data);
+        await handleUserDeleted(event.data);
         break;
       default:
         console.log(`Unhandled event type: ${eventType}`);
@@ -65,7 +76,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function handleUserCreated(userData: any) {
+async function handleUserCreated(userData: {
+  id: string;
+  email_addresses: Array<{ email_address: string }>;
+  first_name?: string;
+  last_name?: string;
+  phone_numbers: Array<{ phone_number: string }>;
+  image_url?: string;
+}) {
   try {
     const user = await UserService.createUser({
       id: userData.id,
@@ -83,7 +101,14 @@ async function handleUserCreated(userData: any) {
   }
 }
 
-async function handleUserUpdated(userData: any) {
+async function handleUserUpdated(userData: {
+  id: string;
+  email_addresses: Array<{ email_address: string }>;
+  first_name?: string;
+  last_name?: string;
+  phone_numbers: Array<{ phone_number: string }>;
+  image_url?: string;
+}) {
   try {
     const user = await UserService.updateUser(userData.id, {
       email: userData.email_addresses[0]?.email_address || undefined,
@@ -100,7 +125,7 @@ async function handleUserUpdated(userData: any) {
   }
 }
 
-async function handleUserDeleted(userData: any) {
+async function handleUserDeleted(userData: { id: string }) {
   try {
     // Prisma will handle cascade deletes for related records
     await UserService.deleteUser(userData.id);

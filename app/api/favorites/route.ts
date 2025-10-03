@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 
 // GET - Get user's favorite properties
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
 
@@ -31,7 +31,33 @@ export async function GET(req: NextRequest) {
       ORDER BY uf.created_at DESC
     `;
 
-    const favorites = await prisma.$queryRawUnsafe(favoritesQuery, userId);
+    const favorites = (await prisma.$queryRawUnsafe(
+      favoritesQuery,
+      userId
+    )) as Array<{
+      id: string;
+      address: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      price: string;
+      squareFeet: number | null;
+      bedrooms: number | null;
+      bathrooms: number | null;
+      yearBuilt: number | null;
+      propertyType: string | null;
+      daysOnMarket: number | null;
+      pricePerSqft: string | null;
+      listingStatus: string | null;
+      features: unknown;
+      description: string | null;
+      createdAt: string;
+      updatedAt: string;
+      walkScore: number;
+      bikeScore: number;
+      transitScore: number;
+      favoritedAt: string;
+    }>;
 
     return NextResponse.json({
       favorites,
@@ -68,12 +94,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if property exists
-    const property = await prisma.$queryRawUnsafe(
+    const property = (await prisma.$queryRawUnsafe(
       `SELECT id FROM properties WHERE id = $1::uuid`,
       propertyId
-    );
+    )) as Array<{ id: string }>;
 
-    if (!property || (property as any[]).length === 0) {
+    if (!property || property.length === 0) {
       return NextResponse.json(
         { error: "Property not found" },
         { status: 404 }
@@ -81,13 +107,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if already favorited
-    const existingFavorite = await prisma.$queryRawUnsafe(
+    const existingFavorite = (await prisma.$queryRawUnsafe(
       `SELECT id FROM user_favorites WHERE user_id = $1 AND property_id = $2::uuid`,
       userId,
       propertyId
-    );
+    )) as Array<{ id: string }>;
 
-    if (existingFavorite && (existingFavorite as any[]).length > 0) {
+    if (existingFavorite && existingFavorite.length > 0) {
       return NextResponse.json(
         { error: "Property already in favorites" },
         { status: 409 }

@@ -22,7 +22,7 @@ interface Property {
   daysOnMarket: number | null;
   pricePerSqft: number | null;
   listingStatus: string | null;
-  features: any;
+  features: Record<string, unknown> | null;
   description: string | null;
   createdAt: string;
   updatedAt: string;

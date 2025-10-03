@@ -6,9 +6,15 @@ import { useState, useEffect } from "react";
 
 interface SearchHistory {
   id: string;
-  search_criteria: any;
+  search_criteria: {
+    city?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    bedrooms?: string;
+    bathrooms?: string;
+    propertyType?: string;
+  };
   created_at: string;
-  results_count: number;
 }
 
 interface FavoriteSummary {
@@ -28,16 +34,83 @@ interface MarketInsights {
   soldAtAskingPercentage: number;
   totalActiveProperties: number;
   avgPrice: number;
-  topCities: any[];
+  topCities: Array<{
+    city: string;
+    state: string;
+    property_count: number;
+    avg_price: number;
+  }>;
 }
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser();
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
-  const [favoritesSummary, setFavoritesSummary] = useState<FavoriteSummary[]>([]);
-  const [totalFavorites, setTotalFavorites] = useState(0);
-  const [marketInsights, setMarketInsights] = useState<MarketInsights | null>(null);
+  const [favoritesSummary, setFavoritesSummary] = useState<FavoriteSummary[]>(
+    []
+  );
+  const [marketInsights, setMarketInsights] = useState<MarketInsights | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!user || !isLoaded) return;
+
+      try {
+        setLoading(true);
+
+        // Fetch data in parallel
+        const [searchesResponse, favoritesResponse, marketResponse] =
+          await Promise.all([
+            fetch(`/api/users/${user.id}/searches`),
+            fetch(`/api/users/${user.id}/favorites-summary`),
+            fetch("/api/market-insights"),
+          ]);
+
+        if (searchesResponse.ok) {
+          const searchesData = await searchesResponse.json();
+          setSearchHistory(searchesData.searches || []);
+        } else {
+          console.error(
+            "Searches API error:",
+            searchesResponse.status,
+            await searchesResponse.text()
+          );
+        }
+
+        if (favoritesResponse.ok) {
+          const favoritesData = await favoritesResponse.json();
+          console.log("Favorites data received:", favoritesData);
+          setFavoritesSummary(favoritesData.recentFavorites || []);
+        } else {
+          console.error(
+            "Favorites API error:",
+            favoritesResponse.status,
+            await favoritesResponse.text()
+          );
+        }
+
+        if (marketResponse.ok) {
+          const marketData = await marketResponse.json();
+          setMarketInsights(marketData.insights);
+        } else {
+          console.error(
+            "Market API error:",
+            marketResponse.status,
+            await marketResponse.text()
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -64,6 +137,62 @@ export default function Dashboard() {
             Go Home
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Navigation */}
+        <nav className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-8">
+                <Link href="/" className="text-2xl font-bold text-indigo-600">
+                  HomeKey
+                </Link>
+                <div className="hidden md:flex space-x-6">
+                  <Link
+                    href="/dashboard"
+                    className="text-indigo-600 font-medium"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/properties"
+                    className="text-gray-700 hover:text-indigo-600 font-medium"
+                  >
+                    Properties
+                  </Link>
+                  <Link
+                    href="/favorites"
+                    className="text-gray-700 hover:text-indigo-600 font-medium"
+                  >
+                    Favorites
+                  </Link>
+                  <Link
+                    href="/comparisons"
+                    className="text-gray-700 hover:text-indigo-600 font-medium"
+                  >
+                    Comparisons
+                  </Link>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Loading State */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="mt-2 text-gray-600">Loading your dashboard...</p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -118,7 +247,7 @@ export default function Dashboard() {
             {user.firstName || user.emailAddresses[0]?.emailAddress}!
           </h1>
           <p className="text-gray-600">
-            Here's your property intelligence dashboard with personalized
+            Here&apos;s your property intelligence dashboard with personalized
             insights and recommendations.
           </p>
         </div>
@@ -162,20 +291,82 @@ export default function Dashboard() {
               Recent Searches
             </h2>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">San Francisco, CA</p>
-                  <p className="text-sm text-gray-600">3+ bed, $800k - $1.2M</p>
+              {searchHistory.length > 0 ? (
+                searchHistory.map((search) => {
+                  // Create URL parameters from search criteria
+                  const searchParams = new URLSearchParams();
+                  if (search.search_criteria?.city)
+                    searchParams.set("city", search.search_criteria.city);
+                  if (search.search_criteria?.minPrice)
+                    searchParams.set(
+                      "minPrice",
+                      search.search_criteria.minPrice
+                    );
+                  if (search.search_criteria?.maxPrice)
+                    searchParams.set(
+                      "maxPrice",
+                      search.search_criteria.maxPrice
+                    );
+                  if (search.search_criteria?.bedrooms)
+                    searchParams.set(
+                      "bedrooms",
+                      search.search_criteria.bedrooms
+                    );
+                  if (search.search_criteria?.bathrooms)
+                    searchParams.set(
+                      "bathrooms",
+                      search.search_criteria.bathrooms
+                    );
+                  if (search.search_criteria?.propertyType)
+                    searchParams.set(
+                      "propertyType",
+                      search.search_criteria.propertyType
+                    );
+
+                  const searchUrl = `/properties?${searchParams.toString()}`;
+
+                  return (
+                    <Link
+                      key={search.id}
+                      href={searchUrl}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {search.search_criteria?.city || "Any Location"}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {search.search_criteria?.bedrooms
+                            ? `${search.search_criteria.bedrooms}+ bed`
+                            : "Any beds"}
+                          ,
+                          {search.search_criteria?.minPrice &&
+                          search.search_criteria?.maxPrice
+                            ? ` $${(
+                                Number(search.search_criteria.minPrice) / 1000
+                              ).toFixed(0)}k - $${(
+                                Number(search.search_criteria.maxPrice) / 1000
+                              ).toFixed(0)}k`
+                            : "Any price"}
+                        </p>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {new Date(search.created_at).toLocaleDateString()}
+                      </span>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 mb-2">No recent searches</p>
+                  <Link
+                    href="/properties"
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                  >
+                    Start searching →
+                  </Link>
                 </div>
-                <span className="text-sm text-gray-500">2 hours ago</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">Austin, TX</p>
-                  <p className="text-sm text-gray-600">2+ bed, $400k - $600k</p>
-                </div>
-                <span className="text-sm text-gray-500">1 day ago</span>
-              </div>
+              )}
             </div>
             <Link
               href="/properties"
@@ -190,28 +381,39 @@ export default function Dashboard() {
               Saved Properties
             </h2>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    123 Main St, San Francisco
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    $1,250,000 • 3 bed, 2 bath
-                  </p>
+              {favoritesSummary.length > 0 ? (
+                favoritesSummary.map((favorite) => (
+                  <div
+                    key={favorite.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {favorite.address}, {favorite.city}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        ${favorite.price.toLocaleString()} •{" "}
+                        {favorite.bedrooms || "N/A"} bed,{" "}
+                        {favorite.bathrooms || "N/A"} bath
+                      </p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      Saved{" "}
+                      {new Date(favorite.favorited_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 mb-2">No saved properties yet</p>
+                  <Link
+                    href="/properties"
+                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                  >
+                    Browse properties →
+                  </Link>
                 </div>
-                <span className="text-sm text-gray-500">Saved 3 days ago</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">
-                    456 Oak Ave, San Francisco
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    $950,000 • 2 bed, 1.5 bath
-                  </p>
-                </div>
-                <span className="text-sm text-gray-500">Saved 1 week ago</span>
-              </div>
+              )}
             </div>
             <Link
               href="/favorites"
@@ -230,22 +432,36 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-3xl font-bold text-green-600 mb-2">
-                +5.2%
+                {marketInsights ? `+${marketInsights.priceIncrease}%` : "--"}
               </div>
               <p className="text-gray-600">Average price increase</p>
-              <p className="text-sm text-gray-500">Last 12 months</p>
+              <p className="text-sm text-gray-500">Current market</p>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-600 mb-2">
-                28 days
+                {marketInsights
+                  ? `${marketInsights.avgDaysOnMarket} days`
+                  : "--"}
               </div>
               <p className="text-gray-600">Average time on market</p>
-              <p className="text-sm text-gray-500">Down from 35 days</p>
+              <p className="text-sm text-gray-500">
+                {marketInsights
+                  ? `${marketInsights.totalActiveProperties} active properties`
+                  : "Loading..."}
+              </p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">94%</div>
+              <div className="text-3xl font-bold text-purple-600 mb-2">
+                {marketInsights
+                  ? `${marketInsights.soldAtAskingPercentage}%`
+                  : "--"}
+              </div>
               <p className="text-gray-600">Properties sold at asking</p>
-              <p className="text-sm text-gray-500">Strong seller's market</p>
+              <p className="text-sm text-gray-500">
+                {marketInsights
+                  ? `Avg price: $${marketInsights.avgPrice.toLocaleString()}`
+                  : "Loading..."}
+              </p>
             </div>
           </div>
         </div>

@@ -16,17 +16,17 @@ export async function GET(
     }
 
     // Check if property is favorited
-    const favorite = await prisma.$queryRawUnsafe(
+    const favorite = (await prisma.$queryRawUnsafe(
       `SELECT id, created_at FROM user_favorites WHERE user_id = $1 AND property_id = $2::uuid`,
       userId,
       propertyId
-    );
+    )) as Array<{ id: string; created_at: string }>;
 
-    const isFavorited = favorite && (favorite as any[]).length > 0;
+    const isFavorited = favorite && favorite.length > 0;
 
     return NextResponse.json({
       isFavorited,
-      favoritedAt: isFavorited ? (favorite as any[])[0].created_at : null,
+      favoritedAt: isFavorited ? favorite[0].created_at : null,
     });
   } catch (error) {
     console.error("Error checking favorite status:", error);

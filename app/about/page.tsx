@@ -71,7 +71,8 @@ export default function About() {
               We believe that buying a home should be an informed decision based
               on comprehensive data, not guesswork. Our platform aggregates
               property information from multiple sources to provide you with a
-              complete picture of any property's value, location, and potential.
+              complete picture of any property&apos;s value, location, and
+              potential.
             </p>
 
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">

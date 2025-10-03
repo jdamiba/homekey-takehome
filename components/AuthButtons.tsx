@@ -4,7 +4,7 @@ import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
 export function AuthButtons() {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
 
   if (isSignedIn) {
     return (
